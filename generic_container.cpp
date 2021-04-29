@@ -4,12 +4,6 @@
 #include <vector>
 #include <cassert>
 
-struct Check
-{
-  std::string name;
-};
-
-bool operator == (const Check& lhs, const Check& rhs) { return lhs.name == rhs.name; }
 
 template <class Container, class Value>
 class ContainerBase
@@ -81,24 +75,47 @@ private:
     std::vector<Value> cont_{};
 };
 
+struct Check
+{
+  std::string name;
+};
+bool operator == (const Check& lhs, const Check& rhs) { return lhs.name == rhs.name; }
+std::ostream& operator<<(std::ostream& os, const Check& check) { os << check.name; return os;}
+using CheckMemoryContainer = MemoryContainer<Check>;
+
+struct Message
+{
+  size_t id;
+};
+bool operator == (const Message& lhs, const Message& rhs) { return lhs.id == rhs.id; }
+std::ostream& operator<<(std::ostream& os, const Message& message) { os << message.id; return os;}
+using MessageMemoryContainer = MemoryContainer<Message>;
+
 template<class Container>
 void print(const Container& container)
 {
     assert(3 == container.size());
-    for (Check check : container)
+    for (auto item : container)
     {
-        std::cout << check.name << '\n';
+        std::cout << item << '\n';
     }
 }
 
 int main()
 {
-    printf("Print check containers");
-    MemoryContainer<Check> mc{};
-    mc.add({"a"});
-    mc.add({"b"});
-    mc.add({"c"});
-    print<MemoryContainer<Check>>(mc);
+    printf("Print check container\n");
+    CheckMemoryContainer cmc{};
+    cmc.add({"a"});
+    cmc.add({"b"});
+    cmc.add({"c"});
+    print<CheckMemoryContainer>(cmc);
 
+    printf("\nPrint message container\n");
+    MessageMemoryContainer mmc{};
+    mmc.add({1});
+    mmc.add({2});
+    mmc.add({3});
+    print<MessageMemoryContainer>(mmc);
+  
     return 0;
 }
