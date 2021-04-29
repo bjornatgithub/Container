@@ -96,6 +96,8 @@ int main()
     printf("Print check containers");
     MemoryContainer<Check> mc{};
     mc.add({"a"});
+    mc.add({"b"});
+    mc.add({"c"});
     print<MemoryContainer<Check>>(mc);
 
     return 0;
