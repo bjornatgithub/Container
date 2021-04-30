@@ -28,6 +28,7 @@ public:
 
         Value operator * () const { return impl_.get(); }
         Iterator& operator ++ () { impl_.next(); return *this; }
+        Iterator  operator ++ (int) { Iterator tmp{*this}; ++*this; return tmp; }
         bool operator == (const Iterator& rhs) const { return impl_.isEnd() || rhs.impl_.isEnd() ? impl_.isEnd() && rhs.impl_.isEnd(): impl_.get() == rhs.impl_.get(); }
         bool operator != (const Iterator& rhs) const { return !(*this == rhs); }
 
