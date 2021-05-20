@@ -15,6 +15,11 @@ template <class Iterator, class Value>
 class IteratorBase
 {
 public:
+    using difference_type = std::ptrdiff_t;
+    using value_type = Value;
+    using reference = value_type;
+    using iterator_category = std::forward_iterator_tag;
+  
     explicit IteratorBase(std::unique_ptr<Iterator> it) : it_{std::move(it)} {}
 
     Value operator * () const { return it_->get(); }
