@@ -11,30 +11,34 @@ struct Check
 
 bool operator == (const Check& lhs, const Check& rhs) { return lhs.name == rhs.name; }
 
-template<class Value>
-class IteratorImpl
+template <class Iterator, class Value>
+class IteratorBase
 {
 public:
+    explicit IteratorBase(std::unique_ptr<Iterator> it) : it_{std::move(it)} {}
+
+    Value operator * () const { return it_->get(); }
+    IteratorBase& operator ++ () { it_->next(); return *this; }
+    bool operator == (const IteratorBase& rhs) const { return it_->get() == rhs.it_->get(); }
+    bool operator != (const IteratorBase& rhs) const { return !(*this == rhs); }
+    
+private:
+    std::unique_ptr<Iterator> it_; //
+};
+
+namespace impl
+{
+  template<class Value>
+  class Iterator
+  {
+  public:
     using value_type = Value;
+  
     virtual value_type get() const = 0;
     virtual void next() = 0;
     virtual bool isEnd() const = 0;
-};
-
-template <class IteratorImpl, class Value>
-class Iterator
-{
-public:
-    explicit Iterator(std::unique_ptr<IteratorImpl> impl) : impl_{std::move(impl)} {}
-
-    Value operator * () const { return impl_->get(); }
-    Iterator& operator ++ () { impl_->next(); return *this; }
-    bool operator == (const Iterator& rhs) const { return impl_->get() == rhs.impl_->get(); }
-    bool operator != (const Iterator& rhs) const { return !(*this == rhs); }
-    
-private:
-    std::unique_ptr<IteratorImpl> impl_; //
-};
+  };
+}
     
 class ICheckRepository
 {
@@ -44,8 +48,8 @@ public:
     virtual bool empty() const = 0;
     virtual size_t size() const = 0;
     
-    using IteratorBase = IteratorImpl<Check>;
-    using const_iterator = Iterator<IteratorImpl<Check>, Check>;
+    using Iterator = impl::Iterator<Check>;
+    using const_iterator = IteratorBase<Iterator, Check>;
     virtual const_iterator begin() const = 0;
     virtual const_iterator end() const = 0;
 };
@@ -53,19 +57,18 @@ public:
 class MemoryCheckRepository final : public ICheckRepository
 {
 public:
-    using ICheckRepository::ICheckRepository;
     using container = std::vector<Check>;
 
     bool empty() const override { return checks_.empty(); }
     size_t size() const override { return checks_.size(); }
 
-    class CheckIterator final : public IteratorBase
+    class Iterator final : public ICheckRepository::Iterator
     {
     public:
-        using IteratorBase::IteratorBase;
+        using value_type = ICheckRepository::Iterator::value_type;
         
-        CheckIterator(const container& c) : cCurrent_{c.begin()}, cEnd_{c.end()} {}
-        CheckIterator() = default;
+        Iterator(const container& c) : cCurrent_{c.begin()}, cEnd_{c.end()} {}
+        Iterator() = default;
 
         value_type get() const override { return cCurrent_ != cEnd_ ? *cCurrent_: Check{}; }
         void next() override { if (cCurrent_ != cEnd_) {++cCurrent_;} }
@@ -76,8 +79,8 @@ public:
         container::const_iterator cEnd_;
     };
     
-    const_iterator begin() const override { return const_iterator{std::unique_ptr<IteratorBase>{new CheckIterator{checks_}}}; }
-    const_iterator end() const override { return const_iterator{std::unique_ptr<IteratorBase>{new CheckIterator{}}}; }
+    const_iterator begin() const override { return const_iterator{std::unique_ptr<ICheckRepository::Iterator>{new Iterator{checks_}}}; }
+    const_iterator end() const override { return const_iterator{std::unique_ptr<ICheckRepository::Iterator>{new Iterator{}}}; }
 
 private:
     container checks_{{"a"}, {"b"}, {"c"}};
@@ -86,19 +89,18 @@ private:
 class StoreCheckRepository final : public ICheckRepository
 {
 public:
-    using ICheckRepository::ICheckRepository;
     using container = std::vector<Check>;
 
     bool empty() const override { return checks_.empty(); }
     size_t size() const override { return checks_.size(); }
 
-    class CheckIterator final : public IteratorBase
+    class Iterator final : public ICheckRepository::Iterator
     {
     public:
-        using IteratorBase::IteratorBase;
+        using value_type = ICheckRepository::Iterator::value_type;
         
-        CheckIterator(const container& c) : cCurrent_{c.begin()}, cEnd_{c.end()} {}
-        CheckIterator() = default;
+        Iterator(const container& c) : cCurrent_{c.begin()}, cEnd_{c.end()} {}
+        Iterator() = default;
 
         value_type get() const override { return cCurrent_ != cEnd_ ? *cCurrent_: Check{}; }
         void next() override { if (cCurrent_ != cEnd_) {++cCurrent_;} }
@@ -109,8 +111,8 @@ public:
         container::const_iterator cEnd_;
     };
     
-    const_iterator begin() const override { return const_iterator{std::unique_ptr<IteratorBase>{new CheckIterator{checks_}}}; }
-    const_iterator end() const override { return const_iterator{std::unique_ptr<IteratorBase>{new CheckIterator{}}}; }
+    const_iterator begin() const override { return const_iterator{std::unique_ptr<ICheckRepository::Iterator>{new Iterator{checks_}}}; }
+    const_iterator end() const override { return const_iterator{std::unique_ptr<ICheckRepository::Iterator>{new Iterator{}}}; }
 
 private:
     container checks_{{"a"}, {"b"}, {"c"}};
